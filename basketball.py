@@ -220,7 +220,7 @@ with upcoming_games:
 #         @st.cache
         st.write(f'Games Scheduled in {selected_year-1}/{selected_year}')
 #         st.write('')
-        months = ['October','November','December','January','February','March','April']
+        months = ['January','February','March','April','October','November','December']
         selected_month = st.selectbox('Month', months)
         
         def get_schedules(year):
@@ -252,12 +252,12 @@ with upcoming_games:
 
             df = pd.DataFrame(data)
             
-#             # subset
-            index = [0,1,3,8]
+#              # subset
+            index = [0,1,2,3]
             new_data = df.iloc[:,index].copy()
 
 #         #     rename columns
-            col_names = [ 'Time (ET)', 'Visitor', 'Home', 'Arena']
+            col_names = [ 'Time (ET)', 'Visitor','VisitorPoints', 'Home']
             new_data.columns = col_names
 #             st.dataframe(new_data)
 
@@ -266,7 +266,9 @@ with upcoming_games:
             df2.columns = col_names2
 #             st.dataframe(df2)
             
-            combined_list = pd.concat([df2, new_data], axis=1)
+            combined_list2 = pd.concat([df2, new_data], axis=1)
+            combined_list=combined_list2.loc[combined_list2['VisitorPoints']=='']
+            combined_list=combined_list.drop(['VisitorPoints'], axis=1)
 #             st.dataframe(combined_list)
             return combined_list
         
