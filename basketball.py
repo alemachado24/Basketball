@@ -15,12 +15,9 @@ import plotly.express as px
 from PIL import Image
 
 
-
 st.set_page_config(page_title="NBA", page_icon="🏀",layout="wide",)
 
-
-st.sidebar.markdown("NBA Forecast")
-
+st.sidebar.markdown("NBA Forecast 🏀")
 
 @st.cache
 def nba_logo():
@@ -465,7 +462,7 @@ with upcoming_games:
                 new_data = df.iloc[:,index].copy()
 
                 #rename columns
-                col_names = [ 'Game', 'Date','At', 'Opponent','W/L', 'Points', 'Opp Points', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO']
+                col_names = [ 'Game', 'Date','At', 'Opp','W/L', 'PTS', 'Opp PTS', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO']
                 new_data.columns = col_names
                 new_data['Date'] = new_data['Date'].fillna('')
                 new_data2=new_data.loc[new_data['Date']!='']
@@ -474,13 +471,14 @@ with upcoming_games:
 
             new_data = get_stats(team=short_name, year=selected_year)
             
-            new_data['Points'] = new_data['Points'].astype(int)
-            new_data['Opp Points'] = new_data['Opp Points'].astype(int)
-            new_data['Won/Lost By'] = new_data.apply(lambda x: x['Points'] - x['Opp Points'], axis=1)
+            new_data['PTS'] = new_data['PTS'].astype(int)
+            new_data['Opp PTS'] = new_data['Opp PTS'].astype(int)
+            new_data['Won/Lost By'] = new_data.apply(lambda x: x['PTS'] - x['Opp PTS'], axis=1)
+            new_data['TOT PTS'] = new_data.apply(lambda x: x['PTS'] + x['Opp PTS'], axis=1)
             
-            new_data = new_data.reindex([ 'Game', 'Date','At', 'Opponent','W/L', 'Points', 'Opp Points','Won/Lost By', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO'], axis=1)
+            new_data = new_data.reindex([ 'Game', 'Date','At', 'Opp','W/L', 'PTS', 'Opp PTS','Won/Lost By','TOT PTS', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO'], axis=1)
             
-            all_together = new_data['Opponent']
+            all_together = new_data['Opp']
             all_together2=all_together.drop_duplicates()
 
             loss_count=new_data.loc[new_data['W/L']=='L']
@@ -489,17 +487,18 @@ with upcoming_games:
             result_encoder_loss = {'W/L': {'L': 1,'W': 0,'' : pd.NA}}
             loss_encoded = loss_count
             loss_encoded.replace(result_encoder_loss, inplace=True)
-            losses = loss_encoded.groupby('Opponent').agg({'W/L': sum,'Won/Lost By':'mean'}).reset_index()
+            losses = loss_encoded.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
 
             result_encoder_wins = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             wins_encoded = win_count
             wins_encoded.replace(result_encoder_wins, inplace=True)
-            wins=wins_encoded.groupby('Opponent').agg({'W/L': sum,'Won/Lost By':'mean'}).reset_index()
+            wins=wins_encoded.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
 
-            result=pd.merge(all_together2,wins,how="left", on=["Opponent"])
-            result2 = pd.merge(result,losses,how="left", on=["Opponent"])
-            col_names_results = ['Opponent','Win Count', 'Win Avg Points', 'Loss Count','Lost Avg Points']
+            result=pd.merge(all_together2,wins,how="left", on=["Opp"])
+            result2 = pd.merge(result,losses,how="left", on=["Opp"])
+            col_names_results = ['Opp','Win Count', 'Win Avg Pts','Win TOT Pts', 'Loss Count','Lost Avg Pts','Lost TOT Pts']
             result2.columns = col_names_results
+#             result2.sort_values(by='Opp')
 
             result2['Win Count'] = result2['Win Count'].fillna(-1)
             result2['Win Count'] = result2['Win Count'].astype(int)
@@ -511,25 +510,36 @@ with upcoming_games:
             result2['Loss Count'] = result2['Loss Count'].astype(str)
             result2['Loss Count'] = result2['Loss Count'].replace('-1', '')
             
-            result2['Win Avg Points'] = result2['Win Avg Points'].fillna(-1000)
-            result2['Win Avg Points'] = result2['Win Avg Points'].astype(float).round(2)
-            result2['Win Avg Points'] = result2['Win Avg Points'].astype(str)
-            result2['Win Avg Points'] = result2['Win Avg Points'].replace('-1000.0', '')
+            result2['Win Avg Pts'] = result2['Win Avg Pts'].fillna(-1000)
+            result2['Win Avg Pts'] = result2['Win Avg Pts'].astype(float).round(2)
+            result2['Win Avg Pts'] = result2['Win Avg Pts'].astype(str)
+            result2['Win Avg Pts'] = result2['Win Avg Pts'].replace('-1000.0', '')
 
-            result2['Lost Avg Points'] = result2['Lost Avg Points'].fillna(-1000)
-            result2['Lost Avg Points'] = result2['Lost Avg Points'].astype(float).round(2)
-            result2['Lost Avg Points'] = result2['Lost Avg Points'].astype(str)
-            result2['Lost Avg Points'] = result2['Lost Avg Points'].replace('-1000.0', '')
+            result2['Lost Avg Pts'] = result2['Lost Avg Pts'].fillna(-1000)
+            result2['Lost Avg Pts'] = result2['Lost Avg Pts'].astype(float).round(2)
+            result2['Lost Avg Pts'] = result2['Lost Avg Pts'].astype(str)
+            result2['Lost Avg Pts'] = result2['Lost Avg Pts'].replace('-1000.0', '')
+            
+            result2['Win TOT Pts'] = result2['Win TOT Pts'].fillna(-1000)
+            result2['Win TOT Pts'] = result2['Win TOT Pts'].astype(float).round(2)
+            result2['Win TOT Pts'] = result2['Win TOT Pts'].astype(str)
+            result2['Win TOT Pts'] = result2['Win TOT Pts'].replace('-1000.0', '')
+
+            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].fillna(-1000)
+            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].astype(float).round(2)
+            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].astype(str)
+            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].replace('-1000.0', '')
+            
             
             st.header('Played Against Summary')
-            st.dataframe(result2)
+            st.dataframe(result2.sort_values(by='Opp'))
 
             result_encoder = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             new_data_encoded = new_data
             new_data_encoded.replace(result_encoder, inplace=True)
 
             inform = f"All Past Games this season: Win = 1, Loss=0"
-            fig_all = px.line(new_data_encoded, x="Date",hover_data=['Opponent','Points','Opp Points'], y=new_data_encoded['W/L'], title=inform)
+            fig_all = px.line(new_data_encoded, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data_encoded['W/L'], title=inform)
             fig_all.update_traces(line=dict(color="#013369"))
             fig_all.update_layout({ 'plot_bgcolor': 'rgba(128,128,128, 0.1)', 'paper_bgcolor': 'rgba(128,128,128, 0)', })
             st.plotly_chart(fig_all, use_container_width=True)
@@ -769,7 +779,7 @@ with upcoming_games:
                 new_data = df.iloc[:,index].copy()
 
                 #rename columns
-                col_names = [ 'Game', 'Date','At', 'Opponent','W/L', 'Points', 'Opp Points', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO']
+                col_names = [ 'Game', 'Date','At', 'Opp','W/L', 'PTS', 'Opp PTS', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO']
                 new_data.columns = col_names
                 new_data['Date'] = new_data['Date'].fillna('')
                 new_data2=new_data.loc[new_data['Date']!='']
@@ -778,13 +788,14 @@ with upcoming_games:
 
             new_data_team2 = get_stats2(team2=short_name2, year2=selected_year)
 
-            new_data_team2['Points'] = new_data_team2['Points'].astype(int)
-            new_data_team2['Opp Points'] = new_data_team2['Opp Points'].astype(int)
-            new_data_team2['Won/Lost By'] = new_data_team2.apply(lambda x: x['Points'] - x['Opp Points'], axis=1)
+            new_data_team2['PTS'] = new_data_team2['PTS'].astype(int)
+            new_data_team2['Opp PTS'] = new_data_team2['Opp PTS'].astype(int)
+            new_data_team2['Won/Lost By'] = new_data_team2.apply(lambda x: x['PTS'] - x['Opp PTS'], axis=1)
+            new_data_team2['TOT PTS'] = new_data_team2.apply(lambda x: x['PTS'] + x['Opp PTS'], axis=1)
 
-            new_data_team2 = new_data_team2.reindex([ 'Game', 'Date','At', 'Opponent','W/L', 'Points', 'Opp Points','Won/Lost By', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO'], axis=1)
+            new_data_team2 = new_data_team2.reindex([ 'Game', 'Date','At', 'Opp','W/L', 'PTS', 'Opp PTS','Won/Lost By','TOT PTS', 'Team ORB', 'Team TRB', 'Team Steals', 'Team Blocks', 'Team TO', 'Opp ORB', 'Opp TRB', 'Opp Steals', 'Opp Blocks', 'Opp TO'], axis=1)
 
-            all_together_team2 = new_data_team2['Opponent']
+            all_together_team2 = new_data_team2['Opp']
             all_together2_team2=all_together_team2.drop_duplicates()
 
             loss_count_team2=new_data_team2.loc[new_data_team2['W/L']=='L']
@@ -793,16 +804,16 @@ with upcoming_games:
             result_encoder_loss_team2 = {'W/L': {'L': 1,'W': 0,'' : pd.NA}}
             loss_encoded_team2 = loss_count_team2
             loss_encoded_team2.replace(result_encoder_loss_team2, inplace=True)
-            losses_team2 = loss_encoded_team2.groupby('Opponent').agg({'W/L': sum,'Won/Lost By':'mean'}).reset_index()
+            losses_team2 = loss_encoded_team2.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
 
             result_encoder_wins_team2 = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             wins_encoded_team2 = win_count_team2
             wins_encoded_team2.replace(result_encoder_wins_team2, inplace=True)
-            wins_team2=wins_encoded_team2.groupby('Opponent').agg({'W/L': sum,'Won/Lost By':'mean'}).reset_index()
+            wins_team2=wins_encoded_team2.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
 
-            result_team2=pd.merge(all_together2_team2,wins_team2,how="left", on=["Opponent"])
-            result2_team2 = pd.merge(result_team2,losses_team2,how="left", on=["Opponent"])
-            col_names_results_team2 = ['Opponent','Win Count', 'Win Avg Points', 'Loss Count','Lost Avg Points']
+            result_team2=pd.merge(all_together2_team2,wins_team2,how="left", on=["Opp"])
+            result2_team2 = pd.merge(result_team2,losses_team2,how="left", on=["Opp"])
+            col_names_results_team2 = ['Opp','Win Count', 'Win Avg Pts','Win TOT Pts', 'Loss Count','Lost Avg Pts','Lost TOT Pts']
             result2_team2.columns = col_names_results_team2
 
             result2_team2['Win Count'] = result2_team2['Win Count'].fillna(-1)
@@ -815,25 +826,36 @@ with upcoming_games:
             result2_team2['Loss Count'] = result2_team2['Loss Count'].astype(str)
             result2_team2['Loss Count'] = result2_team2['Loss Count'].replace('-1', '')
 
-            result2_team2['Win Avg Points'] = result2_team2['Win Avg Points'].fillna(-1000)
-            result2_team2['Win Avg Points'] = result2_team2['Win Avg Points'].astype(float).round(2)
-            result2_team2['Win Avg Points'] = result2_team2['Win Avg Points'].astype(str)
-            result2_team2['Win Avg Points'] = result2_team2['Win Avg Points'].replace('-1000.0', '')
+            result2_team2['Win Avg Pts'] = result2_team2['Win Avg Pts'].fillna(-1000)
+            result2_team2['Win Avg Pts'] = result2_team2['Win Avg Pts'].astype(float).round(2)
+            result2_team2['Win Avg Pts'] = result2_team2['Win Avg Pts'].astype(str)
+            result2_team2['Win Avg Pts'] = result2_team2['Win Avg Pts'].replace('-1000.0', '')
 
-            result2_team2['Lost Avg Points'] = result2_team2['Lost Avg Points'].fillna(-1000)
-            result2_team2['Lost Avg Points'] = result2_team2['Lost Avg Points'].astype(float).round(2)
-            result2_team2['Lost Avg Points'] = result2_team2['Lost Avg Points'].astype(str)
-            result2_team2['Lost Avg Points'] = result2_team2['Lost Avg Points'].replace('-1000.0', '')
+            result2_team2['Lost Avg Pts'] = result2_team2['Lost Avg Pts'].fillna(-1000)
+            result2_team2['Lost Avg Pts'] = result2_team2['Lost Avg Pts'].astype(float).round(2)
+            result2_team2['Lost Avg Pts'] = result2_team2['Lost Avg Pts'].astype(str)
+            result2_team2['Lost Avg Pts'] = result2_team2['Lost Avg Pts'].replace('-1000.0', '')
+            
+            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].fillna(-1000)
+            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].astype(float).round(2)
+            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].astype(str)
+            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].replace('-1000.0', '')
+
+            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].fillna(-1000)
+            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].astype(float).round(2)
+            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].astype(str)
+            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].replace('-1000.0', '')
+            result2_team2.sort_values(by='Opp', ascending=True)
 
             st.header('Played Against Summary')
-            st.dataframe(result2_team2)
+            st.dataframe(result2_team2.sort_values(by='Opp'))
 
             result_encoder_team2 = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             new_data_encoded_team2 = new_data_team2
             new_data_encoded_team2.replace(result_encoder_team2, inplace=True)
 
             inform_team2 = f"All Past Games this season: Win = 1, Loss=0"
-            fig_all_team2 = px.line(new_data_encoded_team2, x="Date",hover_data=['Opponent','Points','Opp Points'], y=new_data_encoded_team2['W/L'], title=inform_team2)
+            fig_all_team2 = px.line(new_data_encoded_team2, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data_encoded_team2['W/L'], title=inform_team2)
             fig_all_team2.update_traces(line=dict(color="#013369"))
             fig_all_team2.update_layout({ 'plot_bgcolor': 'rgba(128,128,128, 0.1)', 'paper_bgcolor': 'rgba(128,128,128, 0)', })
             st.plotly_chart(fig_all_team2, use_container_width=True)
@@ -849,4 +871,6 @@ with upcoming_games:
 
         except:
             st.warning('Please select a team') 
+
+ 
             
