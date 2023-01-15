@@ -16,13 +16,11 @@ from PIL import Image
 
 
 
-st.set_page_config(page_title="NBA", page_icon="📈",layout="wide",)
+st.set_page_config(page_title="NBA", page_icon="🏀",layout="wide",)
 
 
 st.sidebar.markdown("NBA Forecast")
 
-
-############################## PENDING TO ADD NBA GAMES ###############################
 
 @st.cache
 def nba_logo():
