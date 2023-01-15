@@ -542,7 +542,7 @@ with upcoming_games:
             st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_points,2)}')
             st.markdown(f'Average Points for All Games: {round(avg_points_games,2)}')
             
-            st.header('Played Against Summary')
+            st.header(f'Played Against {short_name} Summary')
             st.dataframe(result2.sort_values(by='Opp'))
 
             result_encoder = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
@@ -868,7 +868,7 @@ with upcoming_games:
             st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_team2["Lost TOT Pts"].astype(float).mean(),2)}')
             st.markdown(f'Average Points for All Games: {round(avg_points_games_team2,2)}')
 
-            st.header('Played Against Summary')
+            st.header(f'Played Against {short_name2} Summary')
             st.dataframe(result2_team2.sort_values(by='Opp'))
 
             result_encoder_team2 = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
