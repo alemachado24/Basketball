@@ -530,6 +530,17 @@ with upcoming_games:
             result2['Lost TOT Pts'] = result2['Lost TOT Pts'].astype(str)
             result2['Lost TOT Pts'] = result2['Lost TOT Pts'].replace('-1000.0', '')
             
+            win_avg=result2.loc[result2['Win TOT Pts']!='']
+            win_avg_points = win_avg["Win TOT Pts"].astype(float).mean()
+            
+            loss_avg=result2.loc[result2['Lost TOT Pts']!='']
+            loss_avg_points = loss_avg["Lost TOT Pts"].astype(float).mean()
+            
+            avg_points_games = new_data["TOT PTS"].astype(float).round(2).mean()
+            
+            st.markdown(f'Average Total Points for Games Won: {round(win_avg_points,2)}')
+            st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_points,2)}')
+            st.markdown(f'Average Points for All Games: {round(avg_points_games,2)}')
             
             st.header('Played Against Summary')
             st.dataframe(result2.sort_values(by='Opp'))
@@ -846,6 +857,16 @@ with upcoming_games:
             result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].astype(str)
             result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].replace('-1000.0', '')
             result2_team2.sort_values(by='Opp', ascending=True)
+            
+            win_avg_team2=result2_team2.loc[result2_team2['Win TOT Pts']!='']
+            
+            loss_avg_team2=result2_team2.loc[result2_team2['Lost TOT Pts']!='']
+            
+            avg_points_games_team2 = new_data_team2["TOT PTS"].astype(float).mean()
+            
+            st.markdown(f'Average Total Points for Games Won: {round(win_avg_team2["Win TOT Pts"].astype(float).mean(),2)}')
+            st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_team2["Lost TOT Pts"].astype(float).mean(),2)}')
+            st.markdown(f'Average Points for All Games: {round(avg_points_games_team2,2)}')
 
             st.header('Played Against Summary')
             st.dataframe(result2_team2.sort_values(by='Opp'))
