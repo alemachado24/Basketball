@@ -14,6 +14,9 @@ import re
 import plotly.express as px
 from PIL import Image
 
+#cd Desktop/AleClasses/NBA
+#streamlit run basketball.py
+
 
 st.set_page_config(page_title="NBA", page_icon="🏀",layout="wide",)
 
@@ -130,7 +133,7 @@ with upcoming_games:
         st.write(f'Games Win Probabilities in {selected_year} from FiveThirtyEight ')
         #------------- webscrap for elo
 #         @st.cache(hash_funcs={pd.DataFrame: lambda _: None})
-        @st.cache
+#         @st.cache
         def get_new_data538_games(year):
             '''
             Function to pull NFL stats from 538 Reference (https://projects.fivethirtyeight.com/2022-nfl-predictions/).
@@ -192,7 +195,7 @@ with upcoming_games:
         months = ['January','February','March','April','October','November','December']
         selected_month = st.selectbox('Month', months)
         
-        @st.cache
+#         @st.cache
         def get_schedules(year):
             '''
             Function to pull NFL stats from Pro Football Reference (https://www.pro-football-reference.com/).
@@ -248,7 +251,10 @@ with upcoming_games:
 
     #---------------------------------Select Team to Analyse
     team_names = ['Boston Celtics','Brooklyn Nets','Philadelphia 76ers','New York Knicks','Toronto Raptors','Milwaukee Bucks','Cleveland Cavaliers','Indiana Pacers','Chicago Bulls','Detroit Pistons','Atlanta Hawks','Miami Heat','Washington Wizards','Orlando Magic','Charlotte Hornets','Denver Nuggets','Portland Trail Blazers','Utah Jazz','Minnesota Timberwolves','Oklahoma City Thunder','Phoenix Suns','Los Angeles Clippers','Sacramento Kings','Golden State Warriors','Los Angeles Lakers','Memphis Grizzlies','New Orleans Pelicans','Dallas Mavericks','Houston Rockets','San Antonio Spurs']
-
+    
+    ranges = [0,180,190,200,210,220,230,240,250,300]
+    ranges_index = ['0-180','180-190','190-200','200-210','210-220','220-230','230-240','240-250','250-300']
+    
     st.header('Compare teams:')
     
     team1, team2 = st.columns(2)#st.columns(2)
@@ -424,15 +430,10 @@ with upcoming_games:
 
 
             st.header("Team Summary")
-            st.markdown(f'Team record: {get_record(team=short_name, year=selected_year)[0]}')
-            st.markdown(f'Points For: {get_record(team=short_name, year=selected_year)[1]}')
-            st.markdown(f'Points Against: {get_record(team=short_name, year=selected_year)[2]}')
-            st.markdown(f'Simple Rating System: {get_record(team=short_name, year=selected_year)[3]}')
-            st.markdown(f'Possession Estimate (Pace): {get_record(team=short_name, year=selected_year)[4]}')
-            st.markdown(f'Offense Rating: {get_record(team=short_name, year=selected_year)[5]}')
-            st.markdown(f'Defense Rating: {get_record(team=short_name, year=selected_year)[6]}')
-            st.markdown(f'Net Rating: {get_record(team=short_name, year=selected_year)[7]}')
-            st.markdown(f'Team Injury Count for Current Week: {injury_count}')
+            st.markdown(f'Team record: {get_record(team=short_name, year=selected_year)[0]} || Injury Count: {injury_count}')
+            st.markdown(f'Points For: {get_record(team=short_name, year=selected_year)[1]} || Points Against: {get_record(team=short_name, year=selected_year)[2]}')
+            st.markdown(f'Simple Rating System: {get_record(team=short_name, year=selected_year)[3]} || Net Rating: {get_record(team=short_name, year=selected_year)[7]}')
+            st.markdown(f'Off Rating: {get_record(team=short_name, year=selected_year)[5]} || Def Rating: {get_record(team=short_name, year=selected_year)[6]}')
 
 #COUNT GAMES STATS ADD IT
             @st.cache(allow_output_mutation=True) 
@@ -537,13 +538,21 @@ with upcoming_games:
             loss_avg_points = loss_avg["Lost TOT Pts"].astype(float).mean()
             
             avg_points_games = new_data["TOT PTS"].astype(float).round(2).mean()
-            
-            st.markdown(f'Average Total Points for Games Won: {round(win_avg_points,2)}')
-            st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_points,2)}')
-            st.markdown(f'Average Points for All Games: {round(avg_points_games,2)}')
+            max_points_games = new_data["TOT PTS"].astype(float).max()
+            min_points_games = new_data["TOT PTS"].astype(float).min()
+ 
+            st.markdown(f'Average Total Points: Games Won {round(win_avg_points,2)} || Games Lost: {round(loss_avg_points,2)}')
+            st.markdown(f'Average Points for All Games {round(avg_points_games,2)} || Min: {min_points_games} || Max: {max_points_games}')
+
+            df_ranges = pd.DataFrame(ranges_index, columns = ['Ranges'])
+            groupped_by_totalpts = new_data['TOT PTS'].groupby(pd.cut(new_data['TOT PTS'], ranges)).count().reset_index(drop=True)
+            df_ranges["Total Games"] = groupped_by_totalpts
+            st.dataframe(df_ranges)
             
             st.header(f'Played Against {short_name} Summary')
             st.dataframe(result2.sort_values(by='Opp'))
+            
+
 
             result_encoder = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             new_data_encoded = new_data
@@ -752,15 +761,10 @@ with upcoming_games:
 
 
             st.header("Team Summary")
-            st.markdown(f'Team record: {get_record2(team2=short_name2, year2=selected_year)[0]}')
-            st.markdown(f'Points For: {get_record2(team2=short_name2, year2=selected_year)[1]}')
-            st.markdown(f'Points Against: {get_record2(team2=short_name2, year2=selected_year)[2]}')
-            st.markdown(f'Simple Rating System: {get_record2(team2=short_name2, year2=selected_year)[3]}')
-            st.markdown(f'Possession Estimate (Pace): {get_record2(team2=short_name2, year2=selected_year)[4]}')
-            st.markdown(f'Offense Rating: {get_record2(team2=short_name2, year2=selected_year)[5]}')
-            st.markdown(f'Defense Rating: {get_record2(team2=short_name2, year2=selected_year)[6]}')
-            st.markdown(f'Net Rating: {get_record2(team2=short_name2, year2=selected_year)[7]}')
-            st.markdown(f'Team Injury Count for Current Week: {injury_count2}')
+            st.markdown(f'Team record: {get_record2(team2=short_name2, year2=selected_year)[0]} || Injury Count: {injury_count2}')
+            st.markdown(f'Points For: {get_record2(team2=short_name2, year2=selected_year)[1]} || Points Against: {get_record2(team2=short_name2, year2=selected_year)[2]}')
+            st.markdown(f'Simple Rating System: {get_record2(team2=short_name2, year2=selected_year)[3]} || Net Rating: {get_record2(team2=short_name2, year2=selected_year)[7]}')
+            st.markdown(f'Off Rating: {get_record2(team2=short_name2, year2=selected_year)[5]} || Def Rating: {get_record2(team2=short_name2, year2=selected_year)[6]}')
 
     #COUNT GAMES STATS ADD IT
             @st.cache(allow_output_mutation=True) 
@@ -863,10 +867,17 @@ with upcoming_games:
             loss_avg_team2=result2_team2.loc[result2_team2['Lost TOT Pts']!='']
             
             avg_points_games_team2 = new_data_team2["TOT PTS"].astype(float).mean()
+            max_points_games_team2 = new_data_team2["TOT PTS"].astype(float).max()
+            min_points_games_team2 = new_data_team2["TOT PTS"].astype(float).min()
             
-            st.markdown(f'Average Total Points for Games Won: {round(win_avg_team2["Win TOT Pts"].astype(float).mean(),2)}')
-            st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_team2["Lost TOT Pts"].astype(float).mean(),2)}')
-            st.markdown(f'Average Points for All Games: {round(avg_points_games_team2,2)}')
+            st.markdown(f'Average Total Points: Games Won {round(win_avg_team2["Win TOT Pts"].astype(float).mean(),2)} || Games Lost: {round(loss_avg_team2["Lost TOT Pts"].astype(float).mean(),2)}')
+#             st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_team2["Lost TOT Pts"].astype(float).mean(),2)}')
+            st.markdown(f'Average Points for All Games {round(avg_points_games_team2,2)} || Min: {min_points_games_team2} || Max: {max_points_games_team2}')
+            
+            df_ranges2 = pd.DataFrame(ranges_index, columns = ['Ranges'])
+            groupped_by_totalpts2 = new_data_team2['TOT PTS'].groupby(pd.cut(new_data_team2['TOT PTS'], ranges)).count().reset_index(drop=True)
+            df_ranges2["Total Games"] = groupped_by_totalpts2
+            st.dataframe(df_ranges2)
 
             st.header(f'Played Against {short_name2} Summary')
             st.dataframe(result2_team2.sort_values(by='Opp'))
@@ -892,6 +903,3 @@ with upcoming_games:
 
         except:
             st.warning('Please select a team') 
-
- 
-            
