@@ -547,11 +547,29 @@ with upcoming_games:
             df_ranges = pd.DataFrame(ranges_index, columns = ['Ranges'])
             groupped_by_totalpts = new_data['TOT PTS'].groupby(pd.cut(new_data['TOT PTS'], ranges)).count().reset_index(drop=True)
             df_ranges["Total Games"] = groupped_by_totalpts
-            st.dataframe(df_ranges)
+
+            ranges_df = pd.DataFrame(df_ranges["Ranges"].dropna().value_counts()).reset_index()
+            ranges_df = ranges_df.sort_values(by="index")
+            ranges_df.columns = ["Ranges","Total Games"]
+            fig = px.bar(
+                df_ranges,
+                x="Ranges",
+                y="Total Games",
+    #             title="Books Read by Year",
+                color_discrete_sequence=["#17408B"],
+            )
+            st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+    
+
             
             st.header(f'Played Against {short_name} Summary')
             st.dataframe(result2.sort_values(by='Opp'))
             
+            inform2 = f"Total Points Tendency"
+            fig_all2 = px.line(new_data, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data['TOT PTS'], title=inform2)
+            fig_all2.update_traces(line=dict(color="#013369"))
+            fig_all2.update_layout({ 'plot_bgcolor': 'rgba(128,128,128, 0.1)', 'paper_bgcolor': 'rgba(128,128,128, 0)', })
+            st.plotly_chart(fig_all2, use_container_width=True)
 
 
             result_encoder = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
@@ -575,6 +593,8 @@ with upcoming_games:
 
         except:
             st.warning('Please select a team') 
+        
+
             
 ######################################### TEAM2 ######################################################
 
@@ -877,10 +897,27 @@ with upcoming_games:
             df_ranges2 = pd.DataFrame(ranges_index, columns = ['Ranges'])
             groupped_by_totalpts2 = new_data_team2['TOT PTS'].groupby(pd.cut(new_data_team2['TOT PTS'], ranges)).count().reset_index(drop=True)
             df_ranges2["Total Games"] = groupped_by_totalpts2
-            st.dataframe(df_ranges2)
+
+            ranges_df_team2 = pd.DataFrame(df_ranges2["Ranges"].dropna().value_counts()).reset_index()
+            ranges_df_team2 = ranges_df_team2.sort_values(by="index")
+            ranges_df_team2.columns = ["Ranges","Total Games"]
+            fig_team2 = px.bar(
+                df_ranges2,
+                x="Ranges",
+                y="Total Games",
+    #             title="Books Read by Year",
+                color_discrete_sequence=["#17408B"],
+            )
+            st.plotly_chart(fig_team2, theme="streamlit", use_container_width=True)
 
             st.header(f'Played Against {short_name2} Summary')
             st.dataframe(result2_team2.sort_values(by='Opp'))
+            
+            inform2_team2 = f"Total Points Tendency"
+            fig_all2_team2 = px.line(new_data_team2, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data_team2['TOT PTS'], title=inform2_team2)
+            fig_all2_team2.update_traces(line=dict(color="#013369"))
+            fig_all2_team2.update_layout({ 'plot_bgcolor': 'rgba(128,128,128, 0.1)', 'paper_bgcolor': 'rgba(128,128,128, 0)', })
+            st.plotly_chart(fig_all2_team2, use_container_width=True)
 
             result_encoder_team2 = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             new_data_encoded_team2 = new_data_team2
@@ -903,3 +940,5 @@ with upcoming_games:
 
         except:
             st.warning('Please select a team') 
+        
+         
