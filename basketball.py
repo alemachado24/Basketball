@@ -128,11 +128,11 @@ with upcoming_games:
     #---------------------------------Week Forecast & Upcomming Games
     row1_1, row1_2 = st.columns((3, 3))#st.columns(2)
 
-    with row1_2:
+    with row1_1:
 
         st.write(f'Games Win Probabilities in {selected_year} from FiveThirtyEight ')
         #------------- webscrap for elo
-#         @st.cache(hash_funcs={pd.DataFrame: lambda _: None})
+    #         @st.cache(hash_funcs={pd.DataFrame: lambda _: None})
 #         @st.cache
         def get_new_data538_games(year):
             '''
@@ -145,115 +145,179 @@ with upcoming_games:
 
             soup = BeautifulSoup(html,'html.parser')
 
-            table2 = soup.find_all(class_=["h3","h4","tr"])
+            table2 = soup.find_all(class_=["day","h4","tr"])
+
+    #             st.write(table2)
 
             data_tocheck = []
 
             for tablerow in table2:
+                data_tocheck.append([tabledata.get_text(strip=True) for tabledata in tablerow.find_all('h3')])
                 data_tocheck.append([tabledata.get_text(strip=True) for tabledata in tablerow.find_all('th')])
                 data_tocheck.append([tabledata.get_text(strip=True) for tabledata in tablerow.find_all('td')])
 
 
             df_tocheck = pd.DataFrame(data_tocheck)
-#             st.dataframe(df_tocheck)
-            
-            index = list(range(1,5))
+    #             st.dataframe(df_tocheck)
+
+            index = [0,1,2,3,4,9]
             df_tocheck2 = df_tocheck.iloc[:,index].copy()
 
-            col_names = ['Time', 'Team', 'Spread', 'Probability']
+            col_names = ['Date','Time', 'Team', 'Spread', 'Probability','To Leave']
             df_tocheck2.columns = col_names
 
-            df_tocheck2 = df_tocheck2[df_tocheck2.Team.notnull()]
+    #             st.dataframe(df_tocheck2)
 
+    #             df_tocheck2 = df_tocheck2[df_tocheck2.Date.notnull()]
+    #             df_tocheck2 = df_tocheck2[df_tocheck2.Time.notnull()]
+            df_tocheck2["Time"].fillna("Replace", inplace = True)
+            df_tocheck2["To Leave"].fillna("To Leave", inplace = True)
+            df_tocheck2['To Leave'] = np.where((df_tocheck2['Date']=='') & (df_tocheck2['Time']=='Replace') , 'To Remove', df_tocheck2['To Leave'])
+            df_tocheck2['To Leave'] = df_tocheck2['To Leave'].str.replace('Score','To Leave Not')
+
+    #             df_tocheck2['To Leave'] = df_tocheck2['Date'].str.replace('Score','To Leave')
             df_tocheck2['Team'] = df_tocheck2['Team'].str.replace('RAPTOR spread','')
             df_tocheck2['Spread'] = df_tocheck2['Spread'].str.replace('Win prob.','')
             df_tocheck2['Probability'] = df_tocheck2['Probability'].str.replace('Score','')
+            df_tocheck2['Time'] = df_tocheck2['Time'].str.replace('Replace','')
+            df_tocheck2["Team"].fillna("", inplace = True)
+            df_tocheck2["Spread"].fillna("", inplace = True)
+            df_tocheck2["Probability"].fillna("", inplace = True)
+            df_tocheck2["Date"].fillna("", inplace = True)
+
 
 
             return df_tocheck2
-    
-        
-        testFrame=pd.DataFrame(get_new_data538_games(selected_year))
-        
-        
+
+
+        testFrame2=pd.DataFrame(get_new_data538_games(selected_year))
+        testFrame=pd.DataFrame(testFrame2)
+
+        new_value_time = []
+        new_value_date = []
+        time_column=[]
+        date_column=[]
+
+        for column in testFrame['Date'].iteritems():
+        #     print(column[0])
+            if column[1]!='':
+                new_value_date=column[1]
+                date_column.append(new_value_date)
+        #         print(new_value)
+            elif column[1]=='':
+                date_column.append(new_value_date)
+
+        date_column_df=pd.DataFrame(date_column, columns=['Game Date'])
+
+
+
+        for column in testFrame['Time'].iteritems():
+        #     print(new_value_time)
+        #     print(column[1])
+            if column[1] == '' and new_value_time == []:
+        #         print('aca')
+                time_column.append('first')
+            elif column[1]!='':
+                new_value_time=column[1]
+                time_column.append(new_value_time)
+        #         print(new_value)
+            elif column[1]=='':
+                time_column.append(new_value_time)
+    #             time_column
+
+        time_column_df=pd.DataFrame(time_column, columns=['Game Time'])
+
+        combined_list = pd.concat([date_column_df,time_column_df], axis=1)
+        combined_list2 = pd.concat([combined_list,testFrame],ignore_index=True, axis=1) #['To Leave']=='To Leave'
+
+        col_names2 = ['Date','Time','NoDate','NoTime', 'Team', 'Spread', 'Probability','To Leave']
+        combined_list2.columns = col_names2
+        combined_list2=combined_list2.loc[combined_list2['To Leave']=='To Leave']
+        combined_list2=combined_list2.drop(['NoDate','NoTime','To Leave'], axis=1)
+        all_combined=combined_list2.loc[combined_list2['Team']!='']
+        all_combined=all_combined.loc[all_combined['Time']!='FINAL']
+    #         st.dataframe(all_combined)
+
+
         def color_negative_red(val):
             '''
             highlight the maximum in a Series yellow.
             '''
             color = 'lightgreen' if str(val) > str(80) else 'white'
             return 'background-color: %s' % color
-        s = testFrame.style.applymap(color_negative_red, subset=['Probability'])
-        st.text('')
-        st.text('')
-        st.text('')
-        st.text('')
-        st.text('')
+        s = all_combined.style.applymap(color_negative_red, subset=['Probability'])
+    #         st.text('')
+    #         st.text('')
+    #         st.text('')
+    #         st.text('')
+    #         st.text('')
         st.dataframe(s)
 
-    with row1_1:
-        st.write(f'Games Scheduled in {selected_year-1}/{selected_year}')
-        months = ['January','February','March','April','October','November','December']
-        selected_month = st.selectbox('Month', months)
+
+        
+#         st.write(f'Games Scheduled in {selected_year-1}/{selected_year}')
+#         months = ['January','February','March','April','October','November','December']
+#         selected_month = st.selectbox('Month', months)
         
 #         @st.cache
-        def get_schedules(year):
-            '''
-            Function to pull NFL stats from Pro Football Reference (https://www.pro-football-reference.com/).
+#         def get_schedules(year):
+#             '''
+#             Function to pull NFL stats from Pro Football Reference (https://www.pro-football-reference.com/).
 
-            - team : team name (str)
-            - year : year (int)
-            https://www.pro-football-reference.com/years/2022/games.htm
-            '''
-            # pull data
-            url = f'https://www.basketball-reference.com/leagues/NBA_{selected_year}_games-{selected_month.lower()}.html'
-            html = requests.get(url).text
-            # parse the data
-            soup = BeautifulSoup(html,'html.parser')
-            table = soup.find('table', id='schedule')
-            tablerows = table.find_all('tr')[1:]
-            data = []
-            data2 = []
+#             - team : team name (str)
+#             - year : year (int)
+#             https://www.pro-football-reference.com/years/2022/games.htm
+#             '''
+#             # pull data
+#             url = f'https://www.basketball-reference.com/leagues/NBA_{selected_year}_games-{selected_month.lower()}.html'
+#             html = requests.get(url).text
+#             # parse the data
+#             soup = BeautifulSoup(html,'html.parser')
+#             table = soup.find('table', id='schedule')
+#             tablerows = table.find_all('tr')[1:]
+#             data = []
+#             data2 = []
 
-            for tablerow in tablerows:
-                data.append([tabledata.get_text(strip=True) for tabledata in tablerow.find_all('td')])
+#             for tablerow in tablerows:
+#                 data.append([tabledata.get_text(strip=True) for tabledata in tablerow.find_all('td')])
     
-            for tablerow in tablerows:
-                    data2.append([tabledata.get_text(strip=True) for tabledata in tablerow.find_all('th')])
+#             for tablerow in tablerows:
+#                     data2.append([tabledata.get_text(strip=True) for tabledata in tablerow.find_all('th')])
 
-            df = pd.DataFrame(data)
+#             df = pd.DataFrame(data)
             
-#             # subset
-            index = [0,1,2,3]
-            new_data = df.iloc[:,index].copy()
+# #             # subset
+#             index = [0,1,2,3]
+#             new_data = df.iloc[:,index].copy()
 
-#         #     rename columns
-            col_names = [ 'Time (ET)', 'Visitor','VisitorPoints', 'Home']
-            new_data.columns = col_names
-#             st.dataframe(new_data)
+# #         #     rename columns
+#             col_names = [ 'Time (ET)', 'Visitor','VisitorPoints', 'Home']
+#             new_data.columns = col_names
+# #             st.dataframe(new_data)
 
-            df2 = pd.DataFrame(data2)
-            col_names2 = ['Date']
-            df2.columns = col_names2
-#             st.dataframe(df2)
+#             df2 = pd.DataFrame(data2)
+#             col_names2 = ['Date']
+#             df2.columns = col_names2
+# #             st.dataframe(df2)
             
-            combined_list2 = pd.concat([df2, new_data], axis=1)
-            combined_list=combined_list2.loc[combined_list2['VisitorPoints']=='']
-            combined_list=combined_list.drop(['VisitorPoints'], axis=1)
-#             st.dataframe(combined_list)
-            return combined_list
+#             combined_list2 = pd.concat([df2, new_data], axis=1)
+#             combined_list=combined_list2.loc[combined_list2['VisitorPoints']=='']
+#             combined_list=combined_list.drop(['VisitorPoints'], axis=1)
+# #             st.dataframe(combined_list)
+#             return combined_list
         
-        new_data_future = get_schedules(year=selected_year)
+#         new_data_future = get_schedules(year=selected_year)
 
-        # Filtering data
-        st.dataframe(new_data_future)
+#         # Filtering data
+#         st.dataframe(new_data_future)
 
     #---------------------------------End of Week Forecast & Upcomming Games ADDED UP TO HERE
 
     #---------------------------------Select Team to Analyse
     team_names = ['Boston Celtics','Brooklyn Nets','Philadelphia 76ers','New York Knicks','Toronto Raptors','Milwaukee Bucks','Cleveland Cavaliers','Indiana Pacers','Chicago Bulls','Detroit Pistons','Atlanta Hawks','Miami Heat','Washington Wizards','Orlando Magic','Charlotte Hornets','Denver Nuggets','Portland Trail Blazers','Utah Jazz','Minnesota Timberwolves','Oklahoma City Thunder','Phoenix Suns','Los Angeles Clippers','Sacramento Kings','Golden State Warriors','Los Angeles Lakers','Memphis Grizzlies','New Orleans Pelicans','Dallas Mavericks','Houston Rockets','San Antonio Spurs']
     
-    ranges = [0,180,190,200,210,220,230,240,250,300]
-    ranges_index = ['0-180','180-190','190-200','200-210','210-220','220-230','230-240','240-250','250-300']
+    ranges = [0,80,90,100,110,120,130,140,150,200]
+    ranges_index = ['0-80','80-90','90-100','100-110','110-120','120-130','130-140','140-150','150-200']
     
     st.header('Compare teams:')
     
@@ -488,18 +552,19 @@ with upcoming_games:
             result_encoder_loss = {'W/L': {'L': 1,'W': 0,'' : pd.NA}}
             loss_encoded = loss_count
             loss_encoded.replace(result_encoder_loss, inplace=True)
-            losses = loss_encoded.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
+            losses = loss_encoded.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','PTS':'mean'}).reset_index()
 
             result_encoder_wins = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             wins_encoded = win_count
             wins_encoded.replace(result_encoder_wins, inplace=True)
-            wins=wins_encoded.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
+            wins=wins_encoded.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','PTS':'mean'}).reset_index()
 
             result=pd.merge(all_together2,wins,how="left", on=["Opp"])
             result2 = pd.merge(result,losses,how="left", on=["Opp"])
-            col_names_results = ['Opp','Win Count', 'Win Avg Pts','Win TOT Pts', 'Loss Count','Lost Avg Pts','Lost TOT Pts']
+            col_names_results = ['Opp','Win Count', 'Win Avg Pts','Win Pts', 'Loss Count','Lost Avg Pts','Lost Pts']
             result2.columns = col_names_results
-#             result2.sort_values(by='Opp')
+            
+#########################           CHANGE ALL OF THIS FOR TEAM POINTS NOT TOTAL POINTS           ############################
 
             result2['Win Count'] = result2['Win Count'].fillna(-1)
             result2['Win Count'] = result2['Win Count'].astype(int)
@@ -521,31 +586,31 @@ with upcoming_games:
             result2['Lost Avg Pts'] = result2['Lost Avg Pts'].astype(str)
             result2['Lost Avg Pts'] = result2['Lost Avg Pts'].replace('-1000.0', '')
             
-            result2['Win TOT Pts'] = result2['Win TOT Pts'].fillna(-1000)
-            result2['Win TOT Pts'] = result2['Win TOT Pts'].astype(float).round(2)
-            result2['Win TOT Pts'] = result2['Win TOT Pts'].astype(str)
-            result2['Win TOT Pts'] = result2['Win TOT Pts'].replace('-1000.0', '')
+            result2['Win Pts'] = result2['Win Pts'].fillna(-1000)
+            result2['Win Pts'] = result2['Win Pts'].astype(float).round(2)
+            result2['Win Pts'] = result2['Win Pts'].astype(str)
+            result2['Win Pts'] = result2['Win Pts'].replace('-1000.0', '')
 
-            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].fillna(-1000)
-            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].astype(float).round(2)
-            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].astype(str)
-            result2['Lost TOT Pts'] = result2['Lost TOT Pts'].replace('-1000.0', '')
+            result2['Lost Pts'] = result2['Lost Pts'].fillna(-1000)
+            result2['Lost Pts'] = result2['Lost Pts'].astype(float).round(2)
+            result2['Lost Pts'] = result2['Lost Pts'].astype(str)
+            result2['Lost Pts'] = result2['Lost Pts'].replace('-1000.0', '')
             
-            win_avg=result2.loc[result2['Win TOT Pts']!='']
-            win_avg_points = win_avg["Win TOT Pts"].astype(float).mean()
+            win_avg=result2.loc[result2['Win Pts']!='']
+            win_avg_points = win_avg["Win Pts"].astype(float).mean()
             
-            loss_avg=result2.loc[result2['Lost TOT Pts']!='']
-            loss_avg_points = loss_avg["Lost TOT Pts"].astype(float).mean()
+            loss_avg=result2.loc[result2['Lost Pts']!='']
+            loss_avg_points = loss_avg["Lost Pts"].astype(float).mean()
             
-            avg_points_games = new_data["TOT PTS"].astype(float).round(2).mean()
-            max_points_games = new_data["TOT PTS"].astype(float).max()
-            min_points_games = new_data["TOT PTS"].astype(float).min()
+            avg_points_games = new_data["PTS"].astype(float).round(2).mean()
+            max_points_games = new_data["PTS"].astype(float).max()
+            min_points_games = new_data["PTS"].astype(float).min()
  
             st.markdown(f'Average Total Points: Games Won {round(win_avg_points,2)} || Games Lost: {round(loss_avg_points,2)}')
             st.markdown(f'Average Points for All Games {round(avg_points_games,2)} || Min: {min_points_games} || Max: {max_points_games}')
 
             df_ranges = pd.DataFrame(ranges_index, columns = ['Ranges'])
-            groupped_by_totalpts = new_data['TOT PTS'].groupby(pd.cut(new_data['TOT PTS'], ranges)).count().reset_index(drop=True)
+            groupped_by_totalpts = new_data['PTS'].groupby(pd.cut(new_data['PTS'], ranges)).count().reset_index(drop=True)
             df_ranges["Total Games"] = groupped_by_totalpts
 
             ranges_df = pd.DataFrame(df_ranges["Ranges"].dropna().value_counts()).reset_index()
@@ -560,13 +625,13 @@ with upcoming_games:
             )
             st.plotly_chart(fig, theme="streamlit", use_container_width=True)
     
-
+############################### FIX RANGES ACCORDANLY TO 1 TEAM NOT THE TOTAL POINTS #########################################
             
             st.header(f'Played Against {short_name} Summary')
             st.dataframe(result2.sort_values(by='Opp'))
             
             inform2 = f"Total Points Tendency"
-            fig_all2 = px.line(new_data, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data['TOT PTS'], title=inform2)
+            fig_all2 = px.line(new_data, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data['PTS'], title=inform2)
             fig_all2.update_traces(line=dict(color="#013369"))
             fig_all2.update_layout({ 'plot_bgcolor': 'rgba(128,128,128, 0.1)', 'paper_bgcolor': 'rgba(128,128,128, 0)', })
             st.plotly_chart(fig_all2, use_container_width=True)
@@ -839,16 +904,16 @@ with upcoming_games:
             result_encoder_loss_team2 = {'W/L': {'L': 1,'W': 0,'' : pd.NA}}
             loss_encoded_team2 = loss_count_team2
             loss_encoded_team2.replace(result_encoder_loss_team2, inplace=True)
-            losses_team2 = loss_encoded_team2.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
+            losses_team2 = loss_encoded_team2.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','PTS':'mean'}).reset_index()
 
             result_encoder_wins_team2 = {'W/L': {'L': 0,'W': 1,'' : pd.NA}}
             wins_encoded_team2 = win_count_team2
             wins_encoded_team2.replace(result_encoder_wins_team2, inplace=True)
-            wins_team2=wins_encoded_team2.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','TOT PTS':'mean'}).reset_index()
+            wins_team2=wins_encoded_team2.groupby('Opp').agg({'W/L': sum,'Won/Lost By':'mean','PTS':'mean'}).reset_index()
 
             result_team2=pd.merge(all_together2_team2,wins_team2,how="left", on=["Opp"])
             result2_team2 = pd.merge(result_team2,losses_team2,how="left", on=["Opp"])
-            col_names_results_team2 = ['Opp','Win Count', 'Win Avg Pts','Win TOT Pts', 'Loss Count','Lost Avg Pts','Lost TOT Pts']
+            col_names_results_team2 = ['Opp','Win Count', 'Win Avg Pts','Win Pts', 'Loss Count','Lost Avg Pts','Lost Pts']
             result2_team2.columns = col_names_results_team2
 
             result2_team2['Win Count'] = result2_team2['Win Count'].fillna(-1)
@@ -871,31 +936,31 @@ with upcoming_games:
             result2_team2['Lost Avg Pts'] = result2_team2['Lost Avg Pts'].astype(str)
             result2_team2['Lost Avg Pts'] = result2_team2['Lost Avg Pts'].replace('-1000.0', '')
             
-            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].fillna(-1000)
-            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].astype(float).round(2)
-            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].astype(str)
-            result2_team2['Win TOT Pts'] = result2_team2['Win TOT Pts'].replace('-1000.0', '')
+            result2_team2['Win Pts'] = result2_team2['Win Pts'].fillna(-1000)
+            result2_team2['Win Pts'] = result2_team2['Win Pts'].astype(float).round(2)
+            result2_team2['Win Pts'] = result2_team2['Win Pts'].astype(str)
+            result2_team2['Win Pts'] = result2_team2['Win Pts'].replace('-1000.0', '')
 
-            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].fillna(-1000)
-            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].astype(float).round(2)
-            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].astype(str)
-            result2_team2['Lost TOT Pts'] = result2_team2['Lost TOT Pts'].replace('-1000.0', '')
+            result2_team2['Lost Pts'] = result2_team2['Lost Pts'].fillna(-1000)
+            result2_team2['Lost Pts'] = result2_team2['Lost Pts'].astype(float).round(2)
+            result2_team2['Lost Pts'] = result2_team2['Lost Pts'].astype(str)
+            result2_team2['Lost Pts'] = result2_team2['Lost Pts'].replace('-1000.0', '')
             result2_team2.sort_values(by='Opp', ascending=True)
             
-            win_avg_team2=result2_team2.loc[result2_team2['Win TOT Pts']!='']
+            win_avg_team2=result2_team2.loc[result2_team2['Win Pts']!='']
             
-            loss_avg_team2=result2_team2.loc[result2_team2['Lost TOT Pts']!='']
+            loss_avg_team2=result2_team2.loc[result2_team2['Lost Pts']!='']
             
-            avg_points_games_team2 = new_data_team2["TOT PTS"].astype(float).mean()
-            max_points_games_team2 = new_data_team2["TOT PTS"].astype(float).max()
-            min_points_games_team2 = new_data_team2["TOT PTS"].astype(float).min()
+            avg_points_games_team2 = new_data_team2["PTS"].astype(float).mean()
+            max_points_games_team2 = new_data_team2["PTS"].astype(float).max()
+            min_points_games_team2 = new_data_team2["PTS"].astype(float).min()
             
-            st.markdown(f'Average Total Points: Games Won {round(win_avg_team2["Win TOT Pts"].astype(float).mean(),2)} || Games Lost: {round(loss_avg_team2["Lost TOT Pts"].astype(float).mean(),2)}')
+            st.markdown(f'Average Total Points: Games Won {round(win_avg_team2["Win Pts"].astype(float).mean(),2)} || Games Lost: {round(loss_avg_team2["Lost Pts"].astype(float).mean(),2)}')
 #             st.markdown(f'Average Total Points for Games Lost: {round(loss_avg_team2["Lost TOT Pts"].astype(float).mean(),2)}')
             st.markdown(f'Average Points for All Games {round(avg_points_games_team2,2)} || Min: {min_points_games_team2} || Max: {max_points_games_team2}')
             
             df_ranges2 = pd.DataFrame(ranges_index, columns = ['Ranges'])
-            groupped_by_totalpts2 = new_data_team2['TOT PTS'].groupby(pd.cut(new_data_team2['TOT PTS'], ranges)).count().reset_index(drop=True)
+            groupped_by_totalpts2 = new_data_team2['PTS'].groupby(pd.cut(new_data_team2['PTS'], ranges)).count().reset_index(drop=True)
             df_ranges2["Total Games"] = groupped_by_totalpts2
 
             ranges_df_team2 = pd.DataFrame(df_ranges2["Ranges"].dropna().value_counts()).reset_index()
@@ -914,7 +979,7 @@ with upcoming_games:
             st.dataframe(result2_team2.sort_values(by='Opp'))
             
             inform2_team2 = f"Total Points Tendency"
-            fig_all2_team2 = px.line(new_data_team2, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data_team2['TOT PTS'], title=inform2_team2)
+            fig_all2_team2 = px.line(new_data_team2, x="Date",hover_data=['Opp','PTS','Opp PTS'], y=new_data_team2['PTS'], title=inform2_team2)
             fig_all2_team2.update_traces(line=dict(color="#013369"))
             fig_all2_team2.update_layout({ 'plot_bgcolor': 'rgba(128,128,128, 0.1)', 'paper_bgcolor': 'rgba(128,128,128, 0)', })
             st.plotly_chart(fig_all2_team2, use_container_width=True)
@@ -940,5 +1005,33 @@ with upcoming_games:
 
         except:
             st.warning('Please select a team') 
+            
+    with row1_2:
+        st.markdown('Total Points Analysis')
+        st.caption('Select two teams to compare to generate details for Potential Total Points. Data in this section analyses last 5 games')
+        try:
+            st.write(f'Mean of last 5 games of {selected_team_full[0]}')
+            new_data_last3 = new_data.iloc[-5:]
+            avg_points_games = new_data_last3["PTS"].astype(float).round(2).mean()
+            st.text(round(avg_points_games,2))
+
+            st.write(f'Mean of last 5 games of {selected_team_full2[0]}')
+            new_data_last3_team2 = new_data_team2.iloc[-5:]
+            avg_points_games_team2 = new_data_last3_team2["PTS"].astype(float).round(2).mean()
+            st.text(round(avg_points_games_team2,2))
+
+            st.write(f'Potential Total Points between {selected_team_full[0]} & {selected_team_full2[0]}')
+            st.text(round(round(avg_points_games,2)+round(avg_points_games_team2,2),2))
+        except:
+            st.warning('Please select 2 teams to compare') 
         
-         
+        
+        
+#FOR TOTAL POINTS:
+# - OFFENSIVE AND DEFENSIVE COUNTS TOWARDS TOTAL POINT
+# - WEIGHT THE PAST 3 GAMES MORE ATTENTIVELY
+# - MATCHUPS?
+# - INJURIES
+# - 
+ 
+            
