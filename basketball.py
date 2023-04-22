@@ -99,7 +99,10 @@ with general_stats:
 #         st.dataframe(df)
 
         #Instead of dropping the columns and selecting the columns I'm going to use
-        index = [0] + list(range(3,12))
+#         index = [0] + list(range(3,12))
+#         new_data_standings = df.iloc[:,index].copy()
+        
+        index = list(range(3,9))
         new_data_standings = df.iloc[:,index].copy()
         
 
