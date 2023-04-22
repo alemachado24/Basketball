@@ -106,9 +106,14 @@ with general_stats:
         new_data_standings = df.iloc[:,index].copy()
         
 
-#         #Rename columns
-        col_names = ['Current Rating', 'Team', 'Conference', 'Full Rating', 'Proj Record', 'PROJ Point Diff', 'Playoffs %','Full Rating Playoffs', 'To Finals', 'Win Finals']
+# #         #Rename columns
+#         col_names = ['Current Rating', 'Team', 'Conference', 'Full Rating', 'Proj Record', 'PROJ Point Diff', 'Playoffs %','Full Rating Playoffs', 'To Finals', 'Win Finals']
+#         new_data_standings.columns = col_names
+        
+        #         #Rename columns
+        col_names = ['Team', 'Conference', 'Playoffs %','Full Rating Playoffs', 'To Finals', 'Win Finals']
         new_data_standings.columns = col_names
+        
 #         st.dataframe(new_data_standings)
         return new_data_standings
 
